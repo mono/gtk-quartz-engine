@@ -38,6 +38,7 @@ extern GType quartz_type_style;
 struct _QuartzStyle
 {
   GtkStyle parent_instance;
+  guint theme_button_kind;
 };
 
 struct _QuartzStyleClass

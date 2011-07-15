@@ -1,75 +1,395 @@
-# FIXME: What sizes should we have?
-gtk-icon-sizes = "gtk-menu=16,16:gtk-small-toolbar=16,16:gtk-large-toolbar=24,24:gtk-dnd=32,32"
-gtk-toolbar-icon-size = small-toolbar
+# Mac OS X friendly theme
+# Original Written by Aaron Bockover <abockover@novell.com>
+# Copyright 2010 Novell, Inc.
+# Quartz Engine Version by Alex Corrado <alexc@xamarin.com>
+# Copyright 2011 Xamarin Inc.
+# Released under the MIT/X11 license
 
-gtk_color_scheme = "fg_color:#000\nbg_color:ededed\nbase_color:#fff\ntext_color:#1A1A1A\nselected_bg_color:#86ABD9\nselected_fg_color:#fff\ntooltip_bg_color:#F5F5B5\ntooltip_fg_color:#000"
+include "gtkrc.key.mac"
 
+gtk-color-scheme =
+"base_color:       #fff
+bg_color:          #ededed
+fg_color:          #000
+text_color:        #000
+selected_bg_color: #4f85cb
+selected_fg_color: #fff
+tooltip_bg_color:  #f7f4b8
+tooltip_fg_color:  #000
+"
+gtk-font-name = "Lucida Grande 12"
+gtk-icon-theme-name = "Tango"
+gtk-menu-popup-delay = 1
 gtk-button-images = 0
 gtk-menu-images = 0
 gtk-enable-mnemonics = 0
+gtk-icon-sizes = "gtk-small-toolbar=16,16:gtk-large-toolbar=16,16"
+gtk-toolbar-icon-size = large-toolbar
 
-style "quartz-default"
-{
-  xthickness = 0
-  ythickness = 0
+style "murrine-default" {
+	xthickness = 0
+	ythickness = 0
 
-  GtkWidget::interior-focus = 1
-  GtkWidget::focus-line-width = 0
-  GtkWidget::focus-padding = 0
+	GtkWidget::interior-focus = 1
+	GtkWidget::focus-line-width = 0
+	GtkWidget::focus-padding = 0
 
-  GtkButton::default-border = { 0, 0, 0, 0 }
-  GtkButton::default-outside-border = { 0, 0, 0, 0 }
-  GtkButton::child-displacement-x = 0
-  GtkButton::child-displacement-y = 0
+	GtkCheckButton::indicator-spacing = 4
+	GtkPaned::handle-size = 6
 
-  GtkCheckButton::indicator-spacing = 3
+	GtkComboBox::appears-as-list = 0
+	GtkComboBox::focus-on-click = 0
 
-  #GtkOptionMenu::indicator-size = { 9, 5 }
-  #GtkOptionMenu::indicator-spacing = { 7, 5, 2, 2 }
+	GtkButton::child-displacement-x = 0
+	GtkButton::child-displacement-y = 0
+	GtkButton::default-border = { 0, 0, 0, 0 }
+	GtkButton::inner-border = { 0, 3, 3, 0 }
 
-  # We have to set a shadow to get the whole box exposed
-  GtkSpinButton::shadow-type = out
+	GtkRange::trough-border = 2
+	GtkRange::slider-width = 14
+	GtkRange::stepper-size = 13
 
-  GtkComboBox::appears-as-list = 0
-  GtkComboBox::focus-on-click = 0
+	GtkScale::slider-length = 15
+	GtkScale::trough-side-details = 0
 
-  GtkNotebook::tab-curvature = 4
-  GtkNotebook::tab-overlap = 0
-  
-  GtkTreeView::allow-rules = 1
-  GtkTreeView::expander-size = 14
-  GtkToolbar::internal-padding = 3
-  GtkExpander::expander-size = 14
+# These settings are currently set by GtkQuartz directly:
+#	GtkScrollbar::min-slider-length = 35
+#	GtkScrollbar::has-forward-stepper = 1
+#	GtkScrollbar::has-backward-stepper = 0
+#	GtkScrollbar::has-secondary-forward-stepper = 0
+#	GtkScrollbar::has-secondary-backward-stepper = 1
 
-  GtkScrolledWindow::scrollbar-spacing = 0
+	GtkScrolledWindow::scrollbars-within-bevel = 1
+	GtkScrolledWindow::scrollbar-spacing = 0
 
-  #GtkMenuItem::toggle-spacing = ...
-  GtkMenuItem::horizontal-padding = 8
-  GtkSeparatorMenuItem::horizontal-padding = 2
+	GtkExpander::expander-size = 16
+	GtkToolbar::internal-padding = 0
+	GtkTreeView::expander-size = 14
+	GtkTreeView::vertical-separator = 0
 
-  engine "quartz"
-  {
-  }
+	GtkMenuBar::internal-padding = 0
+	GtkMenu::horizontal-padding = 0
+	GtkMenu::vertical-padding = 0
+	GtkMenuItem::horizontal-padding = 10
+
+	fg[NORMAL]        = @fg_color
+	fg[PRELIGHT]      = @fg_color
+	fg[SELECTED]      = @selected_fg_color
+	fg[ACTIVE]        = @fg_color
+	fg[INSENSITIVE]   = darker (@bg_color)
+
+	bg[NORMAL]        = @bg_color
+	bg[PRELIGHT]      = shade (1.02, @bg_color)
+	bg[SELECTED]      = @selected_bg_color
+	bg[INSENSITIVE]   = @bg_color
+	bg[ACTIVE]        = shade (1.04, @bg_color)
+
+	base[NORMAL]      = @base_color
+	base[PRELIGHT]    = shade (0.95, @bg_color)
+	base[ACTIVE]      = shade (0.92, @selected_bg_color)
+	base[SELECTED]    = shade (0.93, @selected_bg_color)
+	base[INSENSITIVE] = @bg_color
+
+	text[NORMAL]      = @text_color
+	text[PRELIGHT]    = @text_color
+	text[ACTIVE]      = @selected_fg_color
+	text[SELECTED]    = @selected_fg_color
+	text[INSENSITIVE] = darker (@bg_color)
+
+	engine "murrine" {
+		contrast = 0.7
+		glazestyle = 3
+		roundness = 3
+		reliefstyle = 2
+		gradient_shades = { 1.15, 1.07, 1.02, 0.9 }
+		lightborder_shade = 1.36
+		lightborderstyle = 1
+		highlight_shade = 1.07
+
+		menubarstyle = 0
+		menubaritemstyle = 0
+		menuitemstyle = 0
+		menustyle = 0
+
+		scrollbarstyle = 0
+		stepperstyle = 1
+		toolbarstyle = 2
+		sliderstyle = 0
+
+		listviewheaderstyle = 1
+		listviewstyle = 2
+	}
 }
-class "*" style "quartz-default"
 
-style "quartz-toolbar"
-{
-  xthickness = 3
-  ythickness = 3
+style "murrine-wide" {
+	xthickness = 2
+	ythickness = 2
+
+	bg[SELECTED] = @selected_bg_color
 }
-widget_class "*Toolbar*" style "quartz-toolbar"
 
-style "quartz-frame"
+style "murrine-wider" {
+	xthickness = 3
+	ythickness = 3
+
+	bg[SELECTED] = @selected_bg_color
+}
+
+style "murrine-button" = "murrine-wider" {
+	bg[NORMAL]      = "#fefefe" #shade (1.127, @bg_color)
+	bg[PRELIGHT]    = "#fefefe" #shade (1.15, @bg_color)
+	bg[ACTIVE]      = shade (0.90, @bg_color)
+	bg[INSENSITIVE] = shade (1.055, @bg_color)
+
+	engine "murrine" {
+		contrast = 0.925
+		lightborder_shade = 1.7
+		gradient_shades = {1.15,1.07,1.0185,0.885}
+	}
+}
+
+style "q-textured-button" {
+	xthickness = 1
+	ythickness = 5
+	engine "quartz"
+	{
+		buttontype = "textured"
+	}
+}
+
+style "q-aqua-button" {
+	xthickness = 3
+	ythickness = 3
+	engine "quartz"
+	{
+		buttontype = "aqua"
+	}
+}
+
+style "q-toggle-button" {
+	ythickness = 5
+	engine "quartz"
+	{
+		buttontype = "inset"
+	}
+}
+
+style "murrine-scale" = "murrine-button" {
+	GtkRange::slider-width = 14
+	engine "murrine" {
+		roundness = 7
+	}
+}
+
+style "murrine-hscale" { }
+style "murrine-vscale" { }
+
+style "murrine-entry" = "murrine-wider" {
+	engine "murrine" {
+		roundness = 0
+	}
+}
+
+style "q-entry" {
+	GtkWidget::interior-focus = 0
+	GtkWidget::focus-line-width = 2
+	GtkEntry::inner-border = { 3, 3, 3, 2 }
+	engine "quartz"
+	{
+	}
+}
+
+style "q-scrollbar" {
+	engine "quartz"
+	{
+	}
+}
+
+style "q-progressbar"
+{
+	engine "quartz"
+	{
+	}
+}
+
+style "murrine-notebook" = "murrine-wider" {
+	bg[ACTIVE]   = shade (0.925, @bg_color)
+	bg[NORMAL]    = "#e5e5e5"
+	bg[SELECTED] = @selected_bg_color
+
+	engine "murrine" {
+		contrast = 0.95
+	}
+}
+
+style "murrine-menu" {
+	xthickness = 0
+	ythickness = 0
+
+	bg[NORMAL] = shade (1.15, @bg_color)
+
+	engine "murrine" {
+		glazestyle = 0
+		highlight_shade = 1.0
+	}
+}
+
+style "murrine-menu-item" {
+	xthickness = 0
+	ythickness = 3
+
+	fg[PRELIGHT] = @selected_fg_color
+	bg[SELECTED] = shade (0.98, @selected_bg_color)
+
+	engine "murrine" {
+		roundness = 0
+		gradient_shades = { 1.07, 1.05, 1.04, 1.01 } 
+		highlight_shade = 1.0
+		glow_shade = 1.3
+		glowstyle = 0
+		contrast = 0.8
+	}
+}
+
+style "murrine-separator-menu-item" { }
+
+style "murrine-treeview" {
+	xthickness = 2
+	ythickness = 2
+	base[NORMAL] = "#dee4ea" # iTunes/Finder sidebar bg color
+	bg[SELECTED] = @selected_bg_color
+}
+
+style "q-treeview-header" {
+	xthickness = 0
+	ythickness = 0
+	font_name = "11"
+	engine "quartz"
+	{
+	}
+}
+
+style "q-scrolled-window"
+{
+  xthickness = 1
+  ythickness = 1
+}
+
+style "q-frame"
 {
   xthickness = 2
   ythickness = 2
 }
-widget_class "*.<GtkFrame>" style "quartz-frame"
 
-style "quartz-scrolled-window"
-{
-  xthickness = 2
-  ythickness = 2
+style "murrine-frame-title" {
+	fg[NORMAL] = lighter (@fg_color)
 }
-widget_class "*.<GtkScrolledWindow>" style "quartz-scrolled-window"
+
+style "murrine-tooltips" = "murrine-wider" {
+	bg[NORMAL] = @tooltip_bg_color
+	fg[NORMAL] = @tooltip_fg_color
+}
+
+style "q-toolbar" {
+	ythickness = 4
+	engine "quartz"
+	{
+		buttontype = "textured"
+	}
+}
+
+style "q-statusbar" {
+	font_name = "11"
+	engine "quartz"
+	{
+		buttontype = "textured"
+	}
+}
+
+style "murrine-comboboxentry" { }
+style "murrine-spinbutton" { }
+
+style "q-combo" {
+	engine "quartz"
+	{
+	}
+}
+
+style "q-radiocheck" {
+	engine "quartz"
+	{
+	}
+}
+
+style "q-arrow" {
+	engine "quartz"
+	{
+	}
+}
+
+style "smaller-text" {
+	font_name = "7"
+}
+
+class "GtkWidget"      style "murrine-default"
+
+class "GtkRange"       style "murrine-wide"
+class "GtkFrame"       style "murrine-wide"
+class "GtkSeparator"   style "murrine-wide"
+
+class "GtkSpinButton"  style "murrine-spinbutton"
+class "GtkScale"       style "murrine-scale"
+class "GtkVScale"      style "murrine-vscale"
+class "GtkHScale"      style "murrine-hscale"
+class "GtkEntry"       style "murrine-entry"
+
+class "GtkArrow"          style "q-arrow"
+class "GtkScrollbar"      style "q-scrollbar"
+class "GtkProgressBar"    style "q-progressbar"
+class "GtkScrolledWindow" style "q-scrolled-window"
+
+class "GtkNotebook"                             style "murrine-notebook"
+widget_class "*<GtkNotebook>*<GtkEventBox>"     style "murrine-notebook"
+widget_class "*<GtkNotebook>*<GtkDrawingArea>"  style "murrine-notebook"
+widget_class "*<GtkNotebook>*<GtkLayout>"       style "murrine-notebook"
+widget_class "*<GtkNotebook>*<GtkLabel>"        style "murrine-notebook"
+
+widget_class "*<GtkMenu>*"              style "murrine-menu"
+widget_class "*<GtkMenuItem>*"          style "murrine-menu-item"
+widget_class "*<GtkSeparatorMenuItem>*" style "murrine-separator-menu-item"
+
+widget_class "*.<GtkFrame>.<GtkLabel>"  style "murrine-frame-title"
+
+class "GtkButton"                            style "q-textured-button"
+class "GtkToggleButton"                      style "q-toggle-button"
+widget_class "*<GtkButtonBox>.<GtkButton>"   style "q-aqua-button"
+widget_class "*<GtkNotebook>*<GtkButton>"    style "q-textured-button"
+
+widget_class "*<GtkCheckButton>"  style "q-radiocheck"
+widget_class "*<GtkRadioButton>"  style "q-radiocheck"
+
+class "GtkComboBox"                     style "q-combo"
+widget_class "*<GtkComboBoxEntry>*"     style "murrine-comboboxentry"
+
+widget_class "*Toolbar*"                    style "q-toolbar"
+widget_class "*Toolbar*Grip*"               style "murrine-default"
+
+widget_class "*<GtkStatusbar>*"             style "q-statusbar"
+
+class "GtkTreeView" style "murrine-treeview"
+widget_class "*<GtkTreeView>.<GtkButton>*" style "q-treeview-header"
+widget_class "*<GtkCTree>.<GtkButton>*"    style "q-treeview-header"
+widget_class "*<GtkList>.<GtkButton>*"     style "q-treeview-header"
+widget_class "*<GtkCList>.<GtkButton>*"    style "q-treeview-header"
+
+widget "gtk-tooltip*" style "murrine-tooltips"
+
+style "murrine-menuitem-text-is-fg-color-workaround" {
+	text[NORMAL]      = @fg_color
+	text[PRELIGHT]    = @selected_fg_color
+	text[SELECTED]    = @selected_fg_color
+	text[ACTIVE]      = @fg_color
+	text[INSENSITIVE] = darker (@bg_color)
+}
+
+widget "*.gtk-combobox-popup-menu.*" style "murrine-menuitem-text-is-fg-color-workaround"

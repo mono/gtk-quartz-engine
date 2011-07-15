@@ -35,9 +35,16 @@ extern GType quartz_type_rc_style;
 #define QUARTZ_IS_RC_STYLE_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), QUARTZ_TYPE_RC_STYLE))
 #define QUARTZ_RC_STYLE_GET_CLASS(obj)    (G_TYPE_INSTANCE_GET_CLASS ((obj), QUARTZ_TYPE_RC_STYLE, QuartzRcStyleClass))
 
+enum {
+	BUTTONTYPE_AQUA = 1,
+	BUTTONTYPE_TEXTURED = 2,
+	BUTTONTYPE_INSET = 3
+};
+
 struct _QuartzRcStyle
 {
   GtkRcStyle parent_instance;
+  guint button_type;
 };
 
 struct _QuartzRcStyleClass

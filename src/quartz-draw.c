@@ -1,6 +1,7 @@
 /* GTK+ theme engine for the Quartz backend
  *
  * Copyright (C) 2007-2008 Imendio AB
+ * Copyright (C) 2011 Xamarin Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -22,6 +23,8 @@
 #include <gtk/gtk.h>
 #include <Carbon/Carbon.h>
 
+#include "WindowGradientHelper.h"
+
 #define IS_DETAIL(d,x) (d && strcmp (d, x) == 0)
 
 /* FIXME: Fix GTK+ to export those in a quartz header file. */
@@ -29,7 +32,54 @@ CGContextRef gdk_quartz_drawable_get_context     (GdkDrawable  *drawable,
                                                   gboolean      antialias);
 void         gdk_quartz_drawable_release_context (GdkDrawable  *drawable,
                                                   CGContextRef  context);
+NSWindow *   gdk_quartz_window_get_nswindow (GdkWindow *window);
 
+CGContextRef
+get_context (GdkWindow    *window,
+             GdkRectangle *area)
+{
+	GdkDrawable  *drawable;
+	CGContextRef  context;
+
+	gint x_delta = 0;
+	gint y_delta = 0;
+	gdk_window_get_internal_paint_info (window, &drawable, &x_delta, &y_delta);
+
+	if (GDK_IS_PIXMAP (window))
+		drawable = GDK_PIXMAP_OBJECT (window)->impl;
+	else
+		drawable = GDK_WINDOW_OBJECT (window)->impl;
+
+	context = gdk_quartz_drawable_get_context (drawable, FALSE);
+	if (!context)
+		return NULL;
+
+	CGContextSaveGState (context);
+	CGContextTranslateCTM (context, -x_delta, -y_delta);
+
+	if (area)
+		CGContextClipToRect (context, CGRectMake (area->x, area->y,
+												  area->width, area->height));
+
+	return context;
+}
+
+void
+release_context (GdkWindow    *window,
+                 CGContextRef  context)
+{
+	GdkDrawable *drawable;
+
+	if (GDK_IS_PIXMAP (window))
+		drawable = GDK_PIXMAP_OBJECT (window)->impl;
+	else
+		drawable = GDK_WINDOW_OBJECT (window)->impl;
+
+	CGContextRestoreGState (context);
+	gdk_quartz_drawable_release_context (drawable, context);
+}
+
+#if 0
 static void
 quartz_measure_button (HIThemeButtonDrawInfo *draw_info,
                        gint                   width,
@@ -45,26 +95,27 @@ quartz_measure_button (HIThemeButtonDrawInfo *draw_info,
 
   HIThemeGetButtonShape (&in_rect, draw_info, &shape);
   HIShapeGetBounds (shape, &out_rect);
-  g_print ("Shape: %d %d, %d %d  ",
+  NSLog (@"Shape: %d %d, %d %d  ",
            (int) out_rect.origin.x,
            (int) out_rect.origin.y,
            (int) out_rect.size.width - (int) out_rect.origin.x,
            (int) out_rect.size.height - (int) out_rect.origin.y);
 
   HIThemeGetButtonBackgroundBounds (&in_rect, draw_info, &out_rect);
-  g_print ("Bounds: %d %d, %d %d  ",
+  NSLog (@"Bounds: %d %d, %d %d  ",
            (int) out_rect.origin.x,
            (int) out_rect.origin.y,
            (int) out_rect.size.width - (int) out_rect.origin.x,
            (int) out_rect.size.height - (int) out_rect.origin.y);
 
   HIThemeGetButtonContentBounds (&in_rect, draw_info, &out_rect);
-  g_print ("Content: %d %d, %d %d\n",
+  NSLog (@"Content: %d %d, %d %d\n",
            (int) out_rect.origin.x,
            (int) out_rect.origin.y,
            (int) out_rect.size.width - (int) out_rect.origin.x,
            (int) out_rect.size.height - (int) out_rect.origin.y);
 }
+#endif
 
 
 void
@@ -82,24 +133,29 @@ quartz_draw_button (GtkStyle        *style,
 {
   CGContextRef context;
   HIRect rect;
+  HIShapeRef shape;
   HIThemeButtonDrawInfo draw_info;
   gint line_width;
+  SInt32 theme_height;
 
   draw_info.version = 0;
   draw_info.kind = kind;
   draw_info.adornment = kThemeAdornmentNone;
   draw_info.value = kThemeButtonOff;
 
-  if (GTK_IS_TOGGLE_BUTTON (widget) &&
-      gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)))
-    {
-      if (kind == kThemeBevelButton)
-        draw_info.kind = kThemeBevelButtonInset;
-      else
-        draw_info.kind = kThemePushButtonInset;
+  // if the button size is too small or too tall, force the button kind so it looks better..
+	if (((width < 20) || (height > 29)) && (kind != kThemeBevelButtonInset)) { // FIXME: magic numbers. not sure if they're correct, just guesses
+	  draw_info.kind = kThemeBevelButton;
+	  rect = CGRectMake (x, y, width, height);
 
-      //draw_info.value = kThemeButtonOn;
-    }
+	} else {
+	  gtk_widget_style_get (widget,
+						    "focus-line-width", &line_width,
+						    NULL);
+
+	  rect = CGRectMake (x + line_width, y + line_width,
+					     width - 2 * line_width, height - 2 * line_width - 2);
+	}
 
   if (state_type == GTK_STATE_ACTIVE ||
       (GTK_IS_TOGGLE_BUTTON (widget) &&
@@ -118,23 +174,10 @@ quartz_draw_button (GtkStyle        *style,
 
   /* FIXME: Emulate default button pulsing. */
 
-  gtk_widget_style_get (widget,
-                        "focus-line-width", &line_width,
-                        NULL);
-
-  rect = CGRectMake (x + line_width, y + line_width,
-                     width - 2 * line_width, height - 2 * line_width - 1);
-
-  if (0)
-    {
-      g_print ("%d %d ", width, height);
-      quartz_measure_button (&draw_info, rect.size.width, rect.size.height);
-      //g_print ("%d %d\n", (int) rect.size.width, (int) rect.size.height);
-    }
-
-  context = gdk_quartz_drawable_get_context (GDK_WINDOW_OBJECT (window)->impl, FALSE);
+  context = get_context (window, NULL);
   if (!context)
     return;
+
 
   HIThemeDrawButton (&rect,
                      &draw_info,
@@ -142,6 +185,58 @@ quartz_draw_button (GtkStyle        *style,
                      kHIThemeOrientationNormal,
                      NULL);
 
-  gdk_quartz_drawable_release_context (GDK_WINDOW_OBJECT (window)->impl, context);
+
+  release_context (window, context);
+}
+
+void
+quartz_draw_statusbar (GtkStyle        *style,
+					   GdkWindow       *window,
+					   GtkStateType     state_type,
+					   GtkWidget       *widget,
+					   const gchar     *detail,
+					   gint             x,
+					   gint             y,
+					   gint             width,
+					   gint             height)
+{
+	if (!window)
+		return;
+
+	CGContextRef context;
+	context = gdk_quartz_drawable_get_context (GDK_WINDOW_OBJECT (window)->impl, FALSE);
+	if (!context)
+		return;
+
+	NSWindow* wnd = gdk_quartz_window_get_nswindow (window);
+	if (!wnd)
+		return;
+
+	if ([wnd backgroundColor] && [[wnd backgroundColor] isKindOfClass: [WindowGradientHelper class]]) {
+		WindowGradientHelper* helper = (WindowGradientHelper*)[wnd backgroundColor];
+		[helper setStatusbarHeight: height];
+	}
+
+	BOOL isMain = [wnd isMainWindow];
+	NSRect frame = [wnd frame];
+
+	float titlebarHeight = [WindowGradientHelper titleBarHeight];
+
+	CGContextSaveGState (context);
+	CGContextAddRect (context, CGRectMake (x, y, width, height));
+	CGContextClip (context);
+
+	CGContextScaleCTM(context, 1.0f, -1.0f);
+	CGContextTranslateCTM(context, 0.0f, -(frame.size.height - titlebarHeight));
+
+	CGContextBeginPath (context);
+	CGContextAddRect (context, CGRectMake (0.0f, 0.0f, frame.size.width, height - 2));
+	CGContextDrawLinearGradient (context, isMain? [WindowGradientHelper activeStatus] : [WindowGradientHelper inactiveStatus], CGPointMake (0.0f, height - 2), CGPointMake (0.0f, 0.0f), 0);
+
+	DrawNativeGreyColorInRect(context, statusbarFirstTopBorderGrey, CGRectMake(0.0f, height - 1, frame.size.width, 0.5f), isMain);
+	DrawNativeGreyColorInRect(context, statusbarSecondTopBorderGrey, CGRectMake(0.0f, height - 1.5, frame.size.width, 0.5f), isMain);
+
+	CGContextRestoreGState (context);
+	gdk_quartz_drawable_release_context (GDK_WINDOW_OBJECT (window)->impl, context);
 }
 

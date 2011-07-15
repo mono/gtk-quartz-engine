@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2007-2008 Imendio AB
  * Copyright (C) 2009 Rob Caelers
+ * Copyright (C) 2011 Xamarin Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -28,17 +29,15 @@
 #include <Carbon/Carbon.h>
 #include <AppKit/AppKit.h>
 
+#include "quartz-rc-style.h"
 #include "quartz-style.h"
 #include "quartz-draw.h"
+#include "WindowGradientHelper.h"
 
 static GtkStyleClass *parent_class;
 
 /* FIXME: Fix GTK+ to export those in a quartz header file. */
-CGContextRef gdk_quartz_drawable_get_context     (GdkDrawable  *drawable,
-                                                  gboolean      antialias);
-void         gdk_quartz_drawable_release_context (GdkDrawable  *drawable,
-                                                  CGContextRef  context);
-
+NSWindow *   gdk_quartz_window_get_nswindow (GdkWindow *window);
 
 /* TODO:
  *
@@ -168,7 +167,7 @@ style_setup_rc_styles (void)
   RC_WIDGET_CLASS ("quartz-button", "*Button*",
                    "GtkWidget::draw-border = { 2, 2, 2, 2 }\n"
                    "GtkWidget::focus-line-width = 1\n"
-                   "GtkButton::inner-border = { 8, 8, 2, 4 }\n"
+                   "GtkButton::inner-border = { 8, 8, 0, 2 }\n"
                    "%s", "");
 
   /* Small font. */
@@ -202,12 +201,13 @@ style_setup_rc_styles (void)
    * just entry->text_area. We still don't get the focus draw properly
    * outside the entry though.
    */
+#if 0
   RC_WIDGET_CLASS ("quartz-entry", "*Entry*",
                    "GtkWidget::interior-focus = 0\n"
                    "GtkWidget::focus-line-width = 2\n"
                    "GtkEntry::inner-border = { 3, 3, 3, 2 }\n"
                    "%s", "");
-
+#endif
   /* SpinButton. FIXME: This needs tweaking, the arrow part is cut off
    * and needs to draw a placard behind itself.
    */
@@ -260,43 +260,6 @@ style_setup_rc_styles (void)
                    "GtkButtonBox::child-min-width = 0\n"
                    "GtkButtonBox::child-min-height = 0\n"
                    "%s", "");
-}
-
-static CGContextRef
-get_context (GdkWindow    *window,
-             GdkRectangle *area)
-{
-  GdkDrawable  *drawable;
-  CGContextRef  context;
-
-  if (GDK_IS_PIXMAP (window))
-    drawable = GDK_PIXMAP_OBJECT (window)->impl;
-  else
-    drawable = GDK_WINDOW_OBJECT (window)->impl;
-
-  context = gdk_quartz_drawable_get_context (drawable, FALSE);
-  if (!context)
-    return NULL;
-
-  if (area)
-    CGContextClipToRect (context, CGRectMake (area->x, area->y,
-                                              area->width, area->height));
-
-  return context;
-}
-
-static void
-release_context (GdkWindow    *window,
-                 CGContextRef  context)
-{
-  GdkDrawable *drawable;
-
-  if (GDK_IS_PIXMAP (window))
-    drawable = GDK_PIXMAP_OBJECT (window)->impl;
-  else
-    drawable = GDK_WINDOW_OBJECT (window)->impl;
-
-  gdk_quartz_drawable_release_context (drawable, context);
 }
 
 static void
@@ -359,18 +322,21 @@ draw_arrow (GtkStyle      *style,
     default:
     case GTK_ARROW_DOWN:
       arrow_info.orientation = kThemeArrowDown;
+      rect.origin.y += 4;
       break;
 
     case GTK_ARROW_RIGHT:
       arrow_info.orientation = kThemeArrowRight;
+      rect.origin.x += 4;
       break;
 
     case GTK_ARROW_LEFT:
       arrow_info.orientation = kThemeArrowLeft;
+      rect.origin.x -= 4;
       break;
     }
 
-  arrow_info.size = kThemeArrow9pt;
+  arrow_info.size = kThemeArrow7pt;
 
   HIThemeDrawPopupArrow (&rect, &arrow_info, context, kHIThemeOrientationNormal);
 
@@ -404,7 +370,19 @@ is_tree_view_child (GtkWidget *widget)
 
   return FALSE;
 }
+static GtkWidget*
+is_in_statusbar (GtkWidget *widget)
+{
+	GtkWidget *tmp;
 
+	for (tmp = widget; tmp; tmp = tmp->parent)
+    {
+		if (GTK_IS_STATUSBAR (tmp))
+			return tmp;
+    }
+
+	return NULL;
+}
 static gboolean
 is_path_bar_button (GtkWidget *widget)
 {
@@ -466,6 +444,13 @@ draw_box (GtkStyle      *style,
 
   sanitize_size (window, &width, &height);
 
+	GtkWidget* statusbar = is_in_statusbar(widget);
+	if (statusbar) // FIXME: ugly hack
+	{
+		GtkAllocation statusRect;
+		gtk_widget_get_allocation (statusbar, &statusRect);
+		quartz_draw_statusbar (style, gtk_widget_get_window (statusbar), state_type, statusbar, detail, x, statusRect.y, width, statusRect.height);
+	}
   if (GTK_IS_BUTTON (widget) && is_tree_view_child (widget))
     {
       /* FIXME: Refactor and share with the rest of the button
@@ -557,7 +542,7 @@ draw_box (GtkStyle      *style,
     }
   else if (IS_DETAIL (detail, "button") || IS_DETAIL (detail, "buttondefault"))
     {
-      if (GTK_IS_TREE_VIEW (widget->parent) || GTK_IS_CLIST (widget->parent))
+      if (is_tree_view_child (widget) || GTK_IS_CLIST (widget->parent))
         {
           /* FIXME: refactor so that we can share this code with
            * normal buttons.
@@ -602,19 +587,9 @@ draw_box (GtkStyle      *style,
         }
       else /* Normal button. */
         {
-          // ThemeButtonKind kind = kThemePushButtonNormal;
-	  // Using kThemePushButton allows for dynamically sized buttons
-	  // including those higher than one line of text.
-          ThemeButtonKind kind = kThemePushButton;
-
-          if (is_path_bar_button (widget) || is_icon_only_button (widget))
-            {
-              kind = kThemeBevelButton;
-            }
-
           quartz_draw_button (style, window, state_type, shadow_type,
                               widget, detail,
-                              kind,
+                              QUARTZ_STYLE (style)->theme_button_kind,
                               x, y,
                               width, height);
           return;
@@ -622,27 +597,49 @@ draw_box (GtkStyle      *style,
     }
   else if (IS_DETAIL (detail, "toolbar"))
     {
-      /* FIXME: Might want to draw something here, like the window title
-       * background... not sure how to do it. It would be good to get the
-       * "unified toolbar look if possible.
-       */
+		if ((height <= 1) || (y != 0))
+			return;
 
-      HIThemeBackgroundDrawInfo draw_info;
-      HIRect rect;
-      CGContextRef context;
+		NSWindow* wnd  = gdk_quartz_window_get_nswindow (window);
+		WindowGradientHelper* helper;
 
-      draw_info.version = 0;
-      draw_info.state = kThemeStateActive;
-      draw_info.kind = kThemeBackgroundWindowHeader;
+		if ([wnd backgroundColor] && [[wnd backgroundColor] isKindOfClass: [WindowGradientHelper class]]) {
+			helper = (WindowGradientHelper*)[wnd backgroundColor];
+		} else {
+			helper = [[WindowGradientHelper alloc] initWithWindow: wnd];
+		}
 
-      rect = CGRectMake (x, y, width, height);
+		/* horrible hack? */
+		if (([wnd styleMask] & NSTexturedBackgroundWindowMask) != NSTexturedBackgroundWindowMask) {
+			[helper performSelectorOnMainThread: @selector(hook) withObject: nil waitUntilDone: NO];
+		}
 
-      context = get_context (window, area);
-      if (!context)
-        return;
+		// we have to subtract 1 because this is clipped, and we need a pixel for the bottom line
+		[helper setToolbarHeight: height - 1];
+		[wnd setBackgroundColor: helper];
 
+		CGContextRef context = get_context (window, area);
+		if (!context)
+			return;
+
+		NSRect frame = [wnd frame];
+		BOOL isMain = [wnd isMainWindow];
+
+		float titlebarHeight = [WindowGradientHelper titleBarHeight];
+		float gradientHeight = titlebarHeight + (height - 1);
+
+		CGContextSaveGState (context);
+		CGContextScaleCTM(context, 1.0f, -1.0f);
+		CGContextTranslateCTM(context, 0.0f, -(frame.size.height - titlebarHeight));
+
+		CGContextBeginPath (context);
+		CGContextAddRect (context, CGRectMake (0.0f, frame.size.height - gradientHeight, frame.size.width, gradientHeight));
+		CGContextDrawLinearGradient (context, isMain? [WindowGradientHelper activeTitle] : [WindowGradientHelper inactiveTitle], CGPointMake (0.0f, frame.size.height), CGPointMake (0.0f, frame.size.height - gradientHeight), 0);
+
+		DrawNativeGreyColorInRect(context, headerBorderGrey, CGRectMake(0.0f, frame.size.height - gradientHeight - 1, frame.size.width, 1.0f), isMain);
+
+		CGContextRestoreGState (context);
       release_context (window, context);
-
       return;
     }
   else if (IS_DETAIL (detail, "menubar"))
@@ -911,7 +908,7 @@ draw_box (GtkStyle      *style,
   else if (GTK_IS_SCROLLBAR (widget) && IS_DETAIL (detail, "trough"))
     {
       CGContextRef context;
-      HIRect rect;
+      CGRect rect;
       HIThemeTrackDrawInfo draw_info;
       GtkAdjustment *adj;
       gint view_size;
@@ -943,6 +940,7 @@ draw_box (GtkStyle      *style,
       draw_info.value = ((adj->value - adj->lower) / adj->upper) * INT_MAX;
 
       draw_info.trackInfo.scrollbar.viewsize = view_size;
+      draw_info.trackInfo.scrollbar.pressState = 0;
 
       draw_info.attributes = kThemeTrackShowThumb | kThemeTrackThumbRgnIsNotGhost;
 
@@ -974,9 +972,10 @@ draw_box (GtkStyle      *style,
     {
       /* FIXME: draw tooltips. */
     }
-
+/*
   parent_class->draw_box (style, window, state_type, shadow_type, area,
                           widget, detail, x, y, width, height);
+*/
 }
 
 static void
@@ -1290,11 +1289,10 @@ draw_extension (GtkStyle        *style,
       release_context (window, context);
     }
 
-#if 0
   parent_class->draw_extension (style, window, state_type,
                                 shadow_type, area, widget, detail,
                                 x, y, width, height, gap_side);
-#endif
+
 }
 
 static void
@@ -1319,9 +1317,18 @@ draw_box_gap (GtkStyle        *style,
 
   sanitize_size (window, &width, &height);
 
+	GtkWidget* statusbar = is_in_statusbar(widget);
+	if (statusbar) // FIXME: ugly hack
+	{
+		GtkAllocation statusRect;
+		gtk_widget_get_allocation (statusbar, &statusRect);
+		quartz_draw_statusbar (style, gtk_widget_get_window (statusbar), state_type, statusbar, detail, x, statusRect.y, width, statusRect.height);
+	}
+	else
   parent_class->draw_box_gap (style, window, state_type, shadow_type,
                               area, widget, detail, x, y, width, height,
                               gap_side, gap_x, gap_width);
+
 }
 
 static void
@@ -1341,6 +1348,14 @@ draw_flat_box (GtkStyle      *style,
 
   sanitize_size (window, &width, &height);
 
+  GtkWidget* statusbar = is_in_statusbar(widget);
+  if (statusbar) // FIXME: ugly hack
+  {
+	  GtkAllocation statusRect;
+	  gtk_widget_get_allocation (statusbar, &statusRect);
+	  quartz_draw_statusbar (style, gtk_widget_get_window (statusbar), state_type, statusbar, detail, x - 2, statusRect.y - 1, width + 4, statusRect.height + 4);
+  }
+  else
   if (IS_DETAIL (detail, "base") ||
       IS_DETAIL (detail, "viewportbin") ||
       IS_DETAIL (detail, "eventbox"))
@@ -1410,8 +1425,10 @@ draw_flat_box (GtkStyle      *style,
                                    area, widget, detail, x, y, width, height);
       return;
     }
+	/*
   parent_class->draw_flat_box (style, window, state_type, shadow_type,
 			       area, widget, detail, x, y, width, height);
+	 */
 }
 
 static void
@@ -1451,8 +1468,17 @@ draw_shadow (GtkStyle      *style,
   /* Handle shadow in and etched in for scrolled windows, frames and
    * entries.
    */
-  if ((GTK_IS_SCROLLED_WINDOW (widget) && IS_DETAIL (detail, "scrolled_window")) ||
-      (GTK_IS_FRAME (widget) && IS_DETAIL (detail, "frame")) ||
+  if (IS_DETAIL (detail, "frame") && is_in_statusbar (widget))
+    {
+		if (height <= 1)
+			return;
+
+		quartz_draw_statusbar (style, window, state_type, widget, detail, x, y, width, height);
+
+		return;
+    }
+  else if ((GTK_IS_SCROLLED_WINDOW (widget) && IS_DETAIL (detail, "scrolled_window")) ||
+     /* (GTK_IS_FRAME (widget) && IS_DETAIL (detail, "frame")) || */
       (GTK_IS_ENTRY (widget) && IS_DETAIL (detail, "entry")))
     {
       GtkShadowType shadow_type = GTK_SHADOW_NONE;
@@ -1533,6 +1559,7 @@ draw_shadow_gap (GtkStyle        *style,
   sanitize_size (window, &width, &height);
 
   g_print ("Missing implementation of draw_shadow_gap for %s\n", detail);
+
   parent_class->draw_shadow_gap (style, window, state_type, shadow_type, area,
                                  widget, detail, x, y, width, height,
                                  gap_side, gap_x, gap_width);
@@ -1605,7 +1632,24 @@ draw_vline (GtkStyle     *style,
             gint          y2,
             gint          x)
 {
-  DEBUG_DRAW;
+	if (GTK_IS_COMBO_BOX (widget) || is_combo_box_child (widget))
+		return;
+
+	NSWindow* wnd;
+	CGContextRef context;
+
+	wnd     = gdk_quartz_window_get_nswindow (window);
+	context = get_context (window, area);
+	if (!wnd || !context)
+        return;
+
+	BOOL isActive = [wnd isMainWindow] && (state_type != GTK_STATE_INSENSITIVE);
+
+	DrawNativeGreyColorInRect (context, headerBorderGrey, CGRectMake (x, y1, 1, y2 - y1), isActive);
+
+	release_context (window, context);
+
+	return;	
 }
 
 static void
@@ -1623,16 +1667,16 @@ draw_slider (GtkStyle       *style,
              GtkOrientation  orientation)
 {
   DEBUG_DRAW;
-
+#if 0
   if (0  && GTK_IS_SCROLLBAR (widget))
     {
       return; /* Ignore. */
     }
 
-  /*  parent_class->draw_slider (style, window, state_type, shadow_type, area,
+    parent_class->draw_slider (style, window, state_type, shadow_type, area,
       widget, detail, x, y, width, height,
       orientation);
-  */
+#endif
 }
 
 static void
@@ -1650,10 +1694,98 @@ draw_resize_grip (GtkStyle      *style,
 {
   DEBUG_DRAW;
 
-  /*  parent_class->draw_resize_grip (style, window, state_type, area,
-      widget, detail, edge, x, y, width,
-      height);
-  */
+  sanitize_size (window, &width, &height);
+
+  CGContextRef context;
+/*
+	HIPoint origin;
+	HIThemeGrowBoxDrawInfo drawInfo;
+
+	origin = CGPointMake (x, y);
+	drawInfo.version = 0;
+	drawInfo.kind = kHIThemeGrowBoxKindNormal;
+	drawInfo.size = kHIThemeGrowBoxSizeNormal;
+
+	if (state_type == GTK_STATE_INSENSITIVE)
+		drawInfo.state = kThemeStateInactive;
+	else
+		drawInfo.state = kThemeStateActive;
+
+	switch (edge) {
+
+		case GDK_WINDOW_EDGE_NORTH:
+			drawInfo.direction = kThemeGrowUp;
+			break;
+
+		case GDK_WINDOW_EDGE_NORTH_EAST:
+			drawInfo.direction = kThemeGrowUp | kThemeGrowRight;
+			break;
+
+		case GDK_WINDOW_EDGE_EAST:
+			drawInfo.direction = kThemeGrowRight;
+			break;
+
+		case GDK_WINDOW_EDGE_SOUTH_EAST:
+			drawInfo.direction = kThemeGrowDown | kThemeGrowRight;
+			break;
+
+		case GDK_WINDOW_EDGE_SOUTH:
+			drawInfo.direction = kThemeGrowDown;
+			break;
+
+		case GDK_WINDOW_EDGE_SOUTH_WEST:
+			drawInfo.direction = kThemeGrowDown | kThemeGrowLeft;
+			break;
+
+		case GDK_WINDOW_EDGE_WEST:
+			drawInfo.direction = kThemeGrowLeft;
+			break;
+
+		case GDK_WINDOW_EDGE_NORTH_WEST:
+			drawInfo.direction = kThemeGrowUp | kThemeGrowLeft;
+			break;
+	}
+
+    GtkWidget* statusbar;
+	if (IS_DETAIL(detail, "statusbar") && (statusbar = is_in_statusbar(widget))) {
+		GtkAllocation statusRect;
+		gtk_widget_get_allocation (statusbar, &statusRect);
+		quartz_draw_statusbar (style, gtk_widget_get_window (statusbar), state_type, statusbar, detail, x, statusRect.y, width, statusRect.height);
+	}
+*/
+	context = get_context (window, area);
+	if (!context)
+        return;
+
+	// This doesn't work well: it's always opaque and not the right grow box for "textured" areas -- i.e. status bar
+	//HIThemeDrawGrowBox(&origin, &drawInfo, context, kHIThemeOrientationNormal);
+
+	NSWindow* wnd = gdk_quartz_window_get_nswindow (window);
+	if (!wnd)
+		return;
+
+	CGContextSaveGState (context);
+	CGContextScaleCTM (context, 1.0f, -1.0f);
+	CGContextTranslateCTM (context, 0.0f, -([wnd frame].size.height - [WindowGradientHelper titleBarHeight]));
+
+	// HACK! Instead of using hitheme, we'll use some undocumented Cocoa apis (NSThemeFrame) to draw the right resize grip...
+
+	id themeFrame = [[wnd contentView] superview];
+
+	// ... but only if its supported!
+	if ([themeFrame respondsToSelector:@selector(_drawGrowBoxWithClip:)]) {
+
+		NSGraphicsContext* old = [NSGraphicsContext currentContext];
+		NSGraphicsContext* ngctx = [NSGraphicsContext graphicsContextWithGraphicsPort: context flipped: NO];
+
+		[NSGraphicsContext setCurrentContext: ngctx];
+		[themeFrame _drawGrowBoxWithClip: NSMakeRect (x,  0, width, height)];
+		[NSGraphicsContext setCurrentContext: old];
+
+	}
+
+	CGContextRestoreGState (context);
+	release_context (window, context);
 }
 
 static void
@@ -1701,6 +1833,10 @@ draw_handle (GtkStyle       *style,
 
       return;
     }
+	/*
+	parent_class->draw_handle (style, window, state_type, shadow_type,
+							   area, widget, detail, x, y, width, height, orientation);
+	 */
 }
 
 static void
@@ -1767,9 +1903,32 @@ static void
 quartz_style_init_from_rc (GtkStyle   *style,
                            GtkRcStyle *rc_style)
 {
-  style_setup_system_font (style);
-
+  QuartzStyle *quartz_style = QUARTZ_STYLE (style);
   parent_class->init_from_rc (style, rc_style);
+
+  //style_setup_system_font (style);
+
+  switch (QUARTZ_RC_STYLE (rc_style)->button_type) {
+
+	case BUTTONTYPE_AQUA:
+	  quartz_style->theme_button_kind = kThemePushButtonNormal;
+	  break;
+
+    case BUTTONTYPE_TEXTURED:
+	  quartz_style->theme_button_kind = kThemePushButtonTextured;
+	  break;
+
+	case BUTTONTYPE_INSET:
+	  quartz_style->theme_button_kind = kThemeBevelButtonInset;
+	  break;
+
+    default:
+	  quartz_style->theme_button_kind = kThemePushButton;
+	  break;
+  }
+
+
+
 }
 
 static void
@@ -1907,4 +2066,5 @@ quartz_style_init (void)
 {
   style_setup_settings ();
   style_setup_rc_styles ();
+  [WindowGradientHelper createGradients];
 }

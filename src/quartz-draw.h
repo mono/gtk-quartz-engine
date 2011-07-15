@@ -1,6 +1,7 @@
 /* GTK+ theme engine for the Quartz backend
  *
  * Copyright (C) 2007-2008 Imendio AB
+ * Copyright (C) 2011 Xamarin Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -21,6 +22,15 @@
 #ifndef QUARTZ_DRAW_H
 #define QUARTZ_DRAW_H
 
+CGContextRef
+get_context (GdkWindow    *window,
+             GdkRectangle *area);
+
+void
+release_context (GdkWindow    *window,
+                 CGContextRef  context);
+
+
 void quartz_draw_button (GtkStyle        *style,
                          GdkWindow       *window,
                          GtkStateType     state_type,
@@ -32,5 +42,16 @@ void quartz_draw_button (GtkStyle        *style,
                          gint             y,
                          gint             width,
                          gint             height);
+
+void
+quartz_draw_statusbar (GtkStyle        *style,
+					   GdkWindow       *window,
+					   GtkStateType     state_type,
+					   GtkWidget       *widget,
+					   const gchar     *detail,
+					   gint             x,
+					   gint             y,
+					   gint             width,
+					   gint             height);
 
 #endif /* QUARTZ_DRAW_H */
