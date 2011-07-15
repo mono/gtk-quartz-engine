@@ -12,6 +12,8 @@ libquartz_la_SOURCES = \
 	quartz-draw.c		\
 	quartz-draw.h
 
+libquartz_la_CFLAGS = -m32
+libquartz_la_OBJCFLAGS = -m32
 libquartz_la_LDFLAGS = -module -avoid-version -no-undefined -framework Carbon -framework AppKit
 libquartz_la_LIBADD =  $(GTK_LIBS) -lobjc
 

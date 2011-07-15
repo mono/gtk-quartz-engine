@@ -38,7 +38,7 @@ else
         DIE=1
 fi
 
-(libtool --version) < /dev/null > /dev/null 2>&1 || {
+(glibtool --version) < /dev/null > /dev/null 2>&1 || {
 	echo
 	echo "You must have libtool installed to compile $PROJECT."
 	echo "Get http://ftp.gnu.org/gnu/libtool/libtool-1.5.22.tar.gz"
@@ -49,7 +49,7 @@ if test "$DIE" -eq 1; then
 	exit 1
 fi
 
-libtoolize --force --copy
+glibtoolize --force --copy
 
 $ACLOCAL $ACLOCAL_FLAGS
 autoheader
