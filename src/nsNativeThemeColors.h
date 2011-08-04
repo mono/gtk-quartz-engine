@@ -44,13 +44,13 @@
 // snippet from: http://stackoverflow.com/questions/2115373/os-version-checking-in-cocoa
 #import <CoreServices/CoreServices.h>
 
-static BOOL OnSnowLeopardOrLater ()
+static BOOL OnVersionOrLater (SInt32 checkMajor, SInt32 checkMinor)
 {
 	SInt32 major = 0;
-	SInt32 minor = 0;   
+	SInt32 minor = 0;
 	Gestalt (gestaltSystemVersionMajor, &major);
 	Gestalt (gestaltSystemVersionMinor, &minor);
-	return ((major == 10 && minor >= 6) || major >= 11);
+	return ((major == checkMajor && minor >= checkMinor) || major > checkMajor);
 }
 
 typedef enum {
@@ -92,9 +92,26 @@ static const int sSnowLeopardThemeColors[][2] = {
   { 0xA7, 0xDE }  // gradient end
 };
 
+static const int sLionThemeColors[][2] = {
+    /* { active window, inactive window } */
+    // titlebar and toolbar:
+    { 0xE9, 0xF8 }, // start grey
+    { 0xB8, 0xE3 }, // end grey
+    { 0x6A, 0xA9 }, // bottom separator line
+    { 0xD0, 0xF1 }, // top separator line
+    // statusbar:
+    { 0x7A, 0x99 }, // first top border
+    { 0xCF, 0xE7 }, // second top border
+    { 0xC9, 0xE4 }, // gradient start
+    { 0xA7, 0xD8 }  // gradient end
+};
+
 static int NativeGreyColorAsInt(ColorName name, BOOL isMain)
 {
-  if (OnSnowLeopardOrLater())
+  if (OnVersionOrLater (10, 7))
+    return sLionThemeColors[name][isMain ? 0 : 1];
+
+  if (OnVersionOrLater (10, 6))
     return sSnowLeopardThemeColors[name][isMain ? 0 : 1];
 
   return sLeopardThemeColors[name][isMain ? 0 : 1];
