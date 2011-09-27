@@ -43,12 +43,13 @@ get_context (GdkWindow    *window,
 
 	gint x_delta = 0;
 	gint y_delta = 0;
-	gdk_window_get_internal_paint_info (window, &drawable, &x_delta, &y_delta);
 
-	if (GDK_IS_PIXMAP (window))
+	if (GDK_IS_PIXMAP (window)) {
 		drawable = GDK_PIXMAP_OBJECT (window)->impl;
-	else
+	} else {
+		gdk_window_get_internal_paint_info (window, &drawable, &x_delta, &y_delta);
 		drawable = GDK_WINDOW_OBJECT (window)->impl;
+	}
 
 	context = gdk_quartz_drawable_get_context (drawable, FALSE);
 	if (!context)
