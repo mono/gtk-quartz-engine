@@ -1313,18 +1313,7 @@ draw_box_gap (GtkStyle        *style,
 {
   DEBUG_DRAW;
 
-  return;
-
-  sanitize_size (window, &width, &height);
-
-	GtkWidget* statusbar = is_in_statusbar(widget);
-	if (statusbar) // FIXME: ugly hack
-	{
-		GtkAllocation statusRect;
-		gtk_widget_get_allocation (statusbar, &statusRect);
-		quartz_draw_statusbar (style, gtk_widget_get_window (statusbar), state_type, statusbar, detail, x, statusRect.y, width, statusRect.height);
-	}
-	else
+  
   parent_class->draw_box_gap (style, window, state_type, shadow_type,
                               area, widget, detail, x, y, width, height,
                               gap_side, gap_x, gap_width);
@@ -1554,8 +1543,6 @@ draw_shadow_gap (GtkStyle        *style,
 {
   DEBUG_DRAW;
 
-  return;
-
   sanitize_size (window, &width, &height);
 
   g_print ("Missing implementation of draw_shadow_gap for %s\n", detail);
@@ -1563,7 +1550,8 @@ draw_shadow_gap (GtkStyle        *style,
   parent_class->draw_shadow_gap (style, window, state_type, shadow_type, area,
                                  widget, detail, x, y, width, height,
                                  gap_side, gap_x, gap_width);
-}
+
+ }
 
 static void
 draw_hline (GtkStyle     *style,
