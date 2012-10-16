@@ -24,6 +24,12 @@ gtk-enable-mnemonics = 0
 gtk-icon-sizes = "gtk-small-toolbar=16,16:gtk-large-toolbar=16,16"
 gtk-toolbar-icon-size = large-toolbar
 
+gtk-cursor-blink = 1
+gtk-cursor-blink-time = 1000
+gtk-double-click-distance = 2
+gtk-double-click-time = 500
+gtk-dnd-drag-threshold = 5
+
 style "murrine-default" {
 	xthickness = 0
 	ythickness = 0
@@ -34,6 +40,9 @@ style "murrine-default" {
 
 	GtkCheckButton::indicator-spacing = 4
 	GtkPaned::handle-size = 6
+
+	GtkButtonBox::child-min-width = 0
+	GtkButtonBox::child-min-height = 0
 
 	GtkComboBox::appears-as-list = 0
 	GtkComboBox::focus-on-click = 0
@@ -50,12 +59,15 @@ style "murrine-default" {
 	GtkScale::slider-length = 15
 	GtkScale::trough-side-details = 0
 
-# These settings are currently set by GtkQuartz directly:
-#	GtkScrollbar::min-slider-length = 35
-#	GtkScrollbar::has-forward-stepper = 1
-#	GtkScrollbar::has-backward-stepper = 0
-#	GtkScrollbar::has-secondary-forward-stepper = 0
-#	GtkScrollbar::has-secondary-backward-stepper = 1
+	GtkScrollbar::min-slider-length = 10
+	GtkScrollbar::has-forward-stepper = 1
+	GtkScrollbar::has-backward-stepper = 0
+	GtkScrollbar::has-secondary-forward-stepper = 0
+	GtkScrollbar::has-secondary-backward-stepper = 1
+	GtkRange::trough-border = 0
+	GtkRange::stepper-spacing = 0
+	GtkRange::stepper-size = 14
+	GtkRange::trough-under-steppers = 1
 
 	GtkScrolledWindow::scrollbars-within-bevel = 1
 	GtkScrolledWindow::scrollbar-spacing = 0
@@ -144,6 +156,12 @@ style "murrine-button" = "murrine-wider" {
 		lightborder_shade = 1.7
 		gradient_shades = {1.15,1.07,1.0185,0.885}
 	}
+}
+
+style "quartz-button" {
+	GtkWidget::draw-border = { 2, 2, 2, 2 }
+	GtkWidget::focus-line-width = 1
+	GtkButton::inner-border = { 8, 8, 0, 2 }
 }
 
 style "q-textured-button" {
@@ -261,7 +279,11 @@ style "murrine-treeview" {
 style "q-treeview-header" {
 	xthickness = 0
 	ythickness = 0
-	font_name = "11"
+	font_name = "Lucida Grande 11"
+	GtkWidget::focus-line-width = 0
+	GtkWidget::draw-border = { 1, 1, 1, 1 }
+	GtkButton::inner-border = { 3, 3, 1, 3 }
+
 	engine "quartz"
 	{
 	}
@@ -313,6 +335,14 @@ style "q-combo" {
 	}
 }
 
+style "quartz-combobox-button" {
+	xthickness = 6
+	ythickness = 2
+
+	engine "quartz" {
+	}
+}
+
 style "q-radiocheck" {
 	engine "quartz"
 	{
@@ -325,9 +355,14 @@ style "q-arrow" {
 	}
 }
 
-style "smaller-text" {
-	font_name = "7"
+style "quartz-small-font" {
+	font_name = "Lucida Grande 11"
 }
+
+style "quartz-mini-font" {
+	font_name = "Lucida Grande 9"
+}
+
 
 class "GtkWidget"      style "murrine-default"
 
@@ -346,7 +381,13 @@ class "GtkScrollbar"      style "q-scrollbar"
 class "GtkProgressBar"    style "q-progressbar"
 class "GtkScrolledWindow" style "q-scrolled-window"
 
-class "GtkNotebook"                             style "murrine-notebook"
+class "GtkNotebook"       style "murrine-notebook"
+
+# these declarations used to be in the theme engine itself:
+widget_class "*Button*"   style "quartz-button"
+widget "*small-font*"     style "quartz-small-font"
+widget "*mini-font*"      style "quartz-mini-font"
+
 widget_class "*<GtkNotebook>*<GtkEventBox>"     style "murrine-notebook"
 widget_class "*<GtkNotebook>*<GtkDrawingArea>"  style "murrine-notebook"
 widget_class "*<GtkNotebook>*<GtkLayout>"       style "murrine-notebook"
@@ -366,8 +407,9 @@ widget_class "*<GtkNotebook>*<GtkButton>"    style "q-textured-button"
 widget_class "*<GtkCheckButton>"  style "q-radiocheck"
 widget_class "*<GtkRadioButton>"  style "q-radiocheck"
 
-class "GtkComboBox"                     style "q-combo"
-widget_class "*<GtkComboBoxEntry>*"     style "murrine-comboboxentry"
+class "GtkComboBox"                           style "q-combo"
+widget_class "*GtkComboBox.*GtkToggleButton"  style "quartz-combobox-button"
+widget_class "*<GtkComboBoxEntry>*"           style "murrine-comboboxentry"
 
 widget_class "*Toolbar*"                    style "q-toolbar"
 widget_class "*Toolbar*Grip*"               style "murrine-default"
