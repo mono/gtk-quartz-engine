@@ -312,8 +312,8 @@ draw_box (GtkStyle      *style,
       else
         draw_info.state = kThemeStateActive;
 
-      if (GTK_WIDGET_HAS_FOCUS (widget))
-        draw_info.adornment |= kThemeAdornmentFocus;
+      //if (GTK_WIDGET_HAS_FOCUS (widget))
+      //  draw_info.adornment |= kThemeAdornmentFocus;
 
       /* We draw outside the allocation to cover the ugly frame from
        * the treeview.
@@ -355,8 +355,8 @@ draw_box (GtkStyle      *style,
       else
         draw_info.state = kThemeStateActive;
 
-      if (GTK_WIDGET_HAS_FOCUS (widget))
-        draw_info.adornment |= kThemeAdornmentFocus;
+      //if (GTK_WIDGET_HAS_FOCUS (widget))
+      //  draw_info.adornment |= kThemeAdornmentFocus;
 
       gtk_widget_style_get (widget,
                             "focus-line-width", &line_width,
@@ -402,8 +402,8 @@ draw_box (GtkStyle      *style,
           else
             draw_info.state = kThemeStateActive;
 
-          if (GTK_WIDGET_HAS_FOCUS (widget))
-            draw_info.adornment |= kThemeAdornmentFocus;
+          //if (GTK_WIDGET_HAS_FOCUS (widget))
+          //  draw_info.adornment |= kThemeAdornmentFocus;
 
           if (IS_DETAIL (detail, "buttondefault"))
             draw_info.adornment |= kThemeAdornmentDefault;
@@ -859,8 +859,8 @@ draw_check (GtkStyle      *style,
       else
         draw_info.state = kThemeStateActive;
 
-      if (GTK_WIDGET_HAS_FOCUS (widget))
-        draw_info.adornment |= kThemeAdornmentFocus;
+      //if (GTK_WIDGET_HAS_FOCUS (widget))
+      //  draw_info.adornment |= kThemeAdornmentFocus;
 
       if (IS_DETAIL (detail, "buttondefault"))
         draw_info.adornment |= kThemeAdornmentDefault;
@@ -978,8 +978,8 @@ draw_option (GtkStyle      *style,
       else
         draw_info.state = kThemeStateActive;
 
-      if (GTK_WIDGET_HAS_FOCUS (widget))
-        draw_info.adornment |= kThemeAdornmentFocus;
+      //if (GTK_WIDGET_HAS_FOCUS (widget))
+      //  draw_info.adornment |= kThemeAdornmentFocus;
 
       if (IS_DETAIL (detail, "buttondefault"))
         draw_info.adornment |= kThemeAdornmentDefault;

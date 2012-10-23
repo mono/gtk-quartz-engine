@@ -167,8 +167,8 @@ quartz_draw_button (GtkStyle        *style,
   else
     draw_info.state = kThemeStateActive;
 
-  if (GTK_WIDGET_HAS_FOCUS (widget))
-    draw_info.adornment |= kThemeAdornmentFocus;
+  //if (GTK_WIDGET_HAS_FOCUS (widget))
+  //  draw_info.adornment |= kThemeAdornmentFocus;
 
   if (IS_DETAIL (detail, "buttondefault"))
     draw_info.adornment |= kThemeAdornmentDefault;
