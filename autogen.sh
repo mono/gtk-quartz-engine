@@ -41,18 +41,25 @@ else
         DIE=1
 fi
 
-(glibtool --version) < /dev/null > /dev/null 2>&1 || {
-	echo
-	echo "You must have libtool installed to compile $PROJECT."
-	echo "Get http://ftp.gnu.org/gnu/libtool/libtool-1.5.22.tar.gz"
-	echo "(or a newer version if it is available)"
-	DIE=1
+LIBTOOL=libtool
+LIBTOOLIZE=libtoolize
+(libtool --version) < /dev/null > /dev/null 2>&1 || {
+	# also check for glibtool
+	(glibtool --version) < /dev/null > /dev/null 2>&1 || {
+		echo
+		echo "You must have libtool installed to compile $PROJECT."
+		echo "Get http://ftp.gnu.org/gnu/libtool/libtool-1.5.22.tar.gz"
+		echo "(or a newer version if it is available)"
+		DIE=1
+	}
+	LIBTOOL=glibtool
+	LIBTOOLIZE=glibtoolize
 }
 if test "$DIE" -eq 1; then
 	exit 1
 fi
 
-glibtoolize --force --copy
+$LIBTOOLIZE --force --copy
 
 $ACLOCAL $ACLOCAL_FLAGS
 autoheader
