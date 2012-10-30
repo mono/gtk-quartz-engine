@@ -170,8 +170,8 @@ quartz_draw_button (GtkStyle        *style,
   //if (GTK_WIDGET_HAS_FOCUS (widget))
   //  draw_info.adornment |= kThemeAdornmentFocus;
 
-  if (IS_DETAIL (detail, "buttondefault"))
-    draw_info.adornment |= kThemeAdornmentDefault;
+  //if (IS_DETAIL (detail, "buttondefault"))
+  //  draw_info.adornment |= kThemeAdornmentDefault;
 
   /* FIXME: Emulate default button pulsing. */
 
