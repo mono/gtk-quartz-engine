@@ -39,6 +39,11 @@ static GtkStyleClass *parent_class;
 /* FIXME: Fix GTK+ to export those in a quartz header file. */
 NSWindow *   gdk_quartz_window_get_nswindow (GdkWindow *window);
 
+/* Private OSX APIs */
+int _CGSDefaultConnection (void);
+CGError CGSSetWindowShadowAndRimParameters (int cid, int wid, float standardDeviation, float density, int offsetX, int offsetY, unsigned int flags);
+
+
 /* TODO:
  *
  * Put the button and frame draw functions in helper functions and handle
@@ -117,7 +122,7 @@ sanitize_size (GdkWindow *window,
 static void
 draw_arrow (GtkStyle      *style,
             GdkWindow     *window,
-            GtkStateType   state,
+            GtkStateType   state_type,
             GtkShadowType  shadow,
             GdkRectangle  *area,
             GtkWidget     *widget,
@@ -150,7 +155,12 @@ draw_arrow (GtkStyle      *style,
   rect = CGRectMake (x, y, width, height);
 
   arrow_info.version = 0;
-  arrow_info.state = kThemeStateActive;
+  if (state_type == GTK_STATE_INSENSITIVE)
+    arrow_info.state = kThemeStateUnavailable;
+  else if (state_type == GTK_STATE_PRELIGHT)
+    arrow_info.state = kThemeStatePressed;
+  else
+    arrow_info.state = kThemeStateActive;
 
   switch (arrow_type)
     {
@@ -522,23 +532,36 @@ draw_box (GtkStyle      *style,
   else if (IS_DETAIL (detail, "menu"))
     {
       GtkWidget *toplevel;
-      HIThemeMenuDrawInfo draw_info;
-      HIRect rect;
+      HIThemeMenuDrawInfo draw_info = { 0 };
+      HIRect content_rect, window_rect;
       CGContextRef context;
+      NSWindow* native;
 
-      draw_info.version = 0;
+      draw_info.version = kHIThemeMenuDrawInfoVersionOne;
       draw_info.menuType = kThemeMenuTypePopUp;
 
       toplevel = gtk_widget_get_toplevel (widget);
       gdk_window_get_size (toplevel->window, &width, &height);
 
-      rect = CGRectMake (x, y, width, height);
+      window_rect = CGRectMake (x, y, width, height);
+
+      native = gdk_quartz_window_get_nswindow (toplevel->window);
+      [native setOpaque:NO];
+      [native setBackgroundColor:[NSColor clearColor]];
+
+      // Round the menu corners- this trick "borrowed" from Mozilla's widget/cocoa/nsCocoaWindow.mm
+      CGSSetWindowShadowAndRimParameters (_CGSDefaultConnection (), [native windowNumber], 10.0f, 0.44f, 0, 10, 512);
+      [native invalidateShadow];
+
+      // This has to be inset from window_rect because HIThemeDrawMenuBackground draws outside the passed rect
+      content_rect = CGRectMake (x, y + 4, width, height - 8);
 
       context = get_context (window, area);
       if (!context)
         return;
 
-      HIThemeDrawMenuBackground (&rect, &draw_info, context, kHIThemeOrientationNormal);
+      CGContextClearRect (context, window_rect);
+      HIThemeDrawMenuBackground (&content_rect, &draw_info, context, kHIThemeOrientationNormal);
 
       release_context (window, context);
 
@@ -569,13 +592,13 @@ draw_box (GtkStyle      *style,
       else
         draw_info.state = kThemeMenuActive;
 
-      item_rect = CGRectMake (x, y, width, height);
+      item_rect = CGRectMake (x, y + 1, width, height + 1);
 
       toplevel = gtk_widget_get_toplevel (widget);
       gdk_window_get_size (toplevel->window, &width, &height);
       menu_rect = CGRectMake (0, 0, width, height);
 
-      context = get_context (window, area);
+      context = get_context (window, NULL);
       if (!context)
         return;
 
@@ -1182,8 +1205,9 @@ draw_flat_box (GtkStyle      *style,
 	  GtkAllocation statusRect;
 	  gtk_widget_get_allocation (statusbar, &statusRect);
 	  quartz_draw_statusbar (style, gtk_widget_get_window (statusbar), state_type, statusbar, detail, x - 2, statusRect.y - 1, width + 4, statusRect.height + 4);
+
+      return;
   }
-  else
   if (IS_DETAIL (detail, "base") ||
       IS_DETAIL (detail, "viewportbin") ||
       IS_DETAIL (detail, "eventbox"))
@@ -1426,11 +1450,11 @@ draw_hline (GtkStyle     *style,
       else
         draw_info.state = kThemeMenuActive;
 
-      item_rect = CGRectMake (x1, y, x2-x1, height);
-
       toplevel = gtk_widget_get_toplevel (widget);
       gdk_window_get_size (toplevel->window, &width, &height);
+
       menu_rect = CGRectMake (0, 0, width, height);
+      item_rect = CGRectMake (0, y + 3, width, 1);
 
       context = get_context (window, area);
       if (!context)
