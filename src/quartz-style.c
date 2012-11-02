@@ -959,6 +959,54 @@ draw_check (GtkStyle      *style,
 
       return;
     }
+  else if (GTK_IS_MENU(gtk_widget_get_parent (widget)))
+    {
+      /* based on http://lists.apple.com/archives/carbon-development/2004/Mar/msg00626.html */
+      CGContextRef context;
+      HIRect rect;
+      HIThemeTextInfo draw_info;
+      UniChar uchCheck = kCheckUnicode;
+      CFStringRef checkString = CFStringCreateWithCharacters (NULL, &uchCheck, 1);
+
+      draw_info.version = 1;
+      draw_info.fontID = kThemeMenuItemMarkFont;
+      draw_info.horizontalFlushness = kHIThemeTextHorizontalFlushRight;
+      draw_info.verticalFlushness = kHIThemeTextVerticalFlushCenter;
+      draw_info.options = 0;
+      draw_info.truncationPosition = kHIThemeTextTruncationNone;
+
+      switch (state_type)
+      {
+        case GTK_STATE_INSENSITIVE:
+          draw_info.state = kThemeStateInactive;
+          break;
+
+        case GTK_STATE_PRELIGHT:
+          draw_info.state = kThemeStatePressed;
+          break;
+
+        default:
+          draw_info.state = kThemeStateActive;
+          break;
+      }
+
+
+      rect = CGRectMake (4, y, width, height);
+
+      context = get_context (window, NULL);
+      if (!context)
+        return;
+
+      HIThemeDrawTextBox (checkString,
+                          &rect,
+                          &draw_info,
+                          context,
+                          kHIThemeOrientationNormal);
+
+      release_context (window, context);
+
+      return;
+    }
 }
 
 static void
