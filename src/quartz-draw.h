@@ -43,6 +43,21 @@ void quartz_draw_button (GtkStyle        *style,
                          gint             width,
                          gint             height);
 
+
+void
+quartz_draw_menu_checkmark (GtkStyle       *style,
+                            GdkWindow      *window,
+                            GtkStateType    state_type,
+                            GtkShadowType   shadow_type,
+                            GdkRectangle   *area,
+                            GtkWidget      *widget,
+                            const gchar    *detail,
+                            gint            x,
+                            gint            y,
+                            gint            width,
+                            gint            height);
+
+
 void
 quartz_draw_statusbar (GtkStyle        *style,
 					   GdkWindow       *window,
