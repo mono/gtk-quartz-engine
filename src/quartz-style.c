@@ -147,6 +147,15 @@ draw_arrow (GtkStyle      *style,
   else if (is_combo_box_child (widget))
     return;
 
+  if (GTK_IS_MENU_ITEM(widget))
+    {
+      quartz_draw_menu_item (style,
+                             window,
+                             state_type,
+                             widget);
+      return;
+    }
+
   context = get_context (window, area);
   if (!context)
     return;
@@ -569,47 +578,10 @@ draw_box (GtkStyle      *style,
     }
   else if (IS_DETAIL (detail, "menuitem"))
     {
-      CGRect menu_rect, item_rect;
-      HIThemeMenuItemDrawInfo draw_info;
-      CGContextRef context;
-      GtkWidget *toplevel;
-
-      /* FIXME: For toplevel menuitems, we should probably use
-       * HIThemeDrawMenuTitle().
-       */
-
-      draw_info.version = 0;
-      draw_info.itemType = kThemeMenuItemPlain;
-      /* FIXME: We need to OR the type with different values depending on
-       * the type (option menu, etc), if it has an icon, etc.
-       */
-      draw_info.itemType |= kThemeMenuItemPopUpBackground;
-
-      if (state_type == GTK_STATE_INSENSITIVE)
-        draw_info.state = kThemeMenuDisabled;
-      else if (state_type == GTK_STATE_PRELIGHT)
-        draw_info.state = kThemeMenuSelected;
-      else
-        draw_info.state = kThemeMenuActive;
-
-      item_rect = CGRectMake (x, y + 1, width, height + 1);
-
-      toplevel = gtk_widget_get_toplevel (widget);
-      gdk_window_get_size (toplevel->window, &width, &height);
-      menu_rect = CGRectMake (0, 0, width, height);
-
-      context = get_context (window, NULL);
-      if (!context)
-        return;
-
-      HIThemeDrawMenuItem (&menu_rect,
-                           &item_rect,
-                           &draw_info,
-                           context,
-                           kHIThemeOrientationNormal,
-                           NULL);
-
-      release_context (window, context);
+      quartz_draw_menu_item (style,
+                             window,
+                             state_type,
+                             widget);
 
       return;
     }

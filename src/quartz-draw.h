@@ -59,6 +59,13 @@ quartz_draw_menu_checkmark (GtkStyle       *style,
 
 
 void
+quartz_draw_menu_item (GtkStyle       *style,
+                       GdkWindow      *window,
+                       GtkStateType    state_type,
+                       GtkWidget      *widget);
+
+
+void
 quartz_draw_statusbar (GtkStyle        *style,
 					   GdkWindow       *window,
 					   GtkStateType     state_type,
