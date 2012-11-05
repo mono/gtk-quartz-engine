@@ -282,7 +282,7 @@ quartz_draw_menu_item (GtkStyle       *style,
       /* FIXME: We need to OR the type with different values depending on
        * the type (option menu, etc), if it has an icon, etc.
        */
-      draw_info.itemType |= kThemeMenuItemPopUpBackground;
+      draw_info.itemType |= kThemeMenuItemNoBackground;
 
       if (state_type == GTK_STATE_INSENSITIVE)
         draw_info.state = kThemeMenuDisabled;

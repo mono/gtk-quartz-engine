@@ -42,7 +42,10 @@ NSWindow *   gdk_quartz_window_get_nswindow (GdkWindow *window);
 /* Private OSX APIs */
 int _CGSDefaultConnection (void);
 CGError CGSSetWindowShadowAndRimParameters (int cid, int wid, float standardDeviation, float density, int offsetX, int offsetY, unsigned int flags);
-
+CGError CGSNewCIFilterByName (int cid, NSString* filterName, void** outFilter);
+CGError CGSSetCIFilterValuesFromDictionary (int cid, void* filter, NSDictionary* filterValues);
+CGError CGSAddWindowFilter (int cid, int wid, void* filter, NSInteger flags);
+CGError CGSReleaseCIFilter (int cid, void* filter);
 
 /* TODO:
  *
@@ -542,7 +545,7 @@ draw_box (GtkStyle      *style,
     {
       GtkWidget *toplevel;
       HIThemeMenuDrawInfo draw_info = { 0 };
-      HIRect content_rect, window_rect;
+      CGRect content_rect, window_rect;
       CGContextRef context;
       NSWindow* native;
 
@@ -550,20 +553,37 @@ draw_box (GtkStyle      *style,
       draw_info.menuType = kThemeMenuTypePopUp;
 
       toplevel = gtk_widget_get_toplevel (widget);
-      gdk_window_get_size (toplevel->window, &width, &height);
+      native = gdk_quartz_window_get_nswindow (toplevel->window);
+
+      if ([native isOpaque])
+        {
+          [native setOpaque:NO];
+          [native setBackgroundColor:[NSColor clearColor]];
+
+          // Round the menu corners and add blur- this trick "borrowed" from
+          // http://hg.mozilla.org/mozilla-central/file/7a52ba9b1542/widget/cocoa/nsCocoaWindow.mm
+          // http://git.chromium.org/gitweb/?p=git/chromium.git;a=blob;f=chrome/browser/ui/cocoa/info_bubble_window.mm;h=b04c1914a86812a80b1f2edfe2d6ecc53b84eba6;hb=4d86f67745b73fc9cc9bf53c74265d6a21903cf2
+
+          int cid = _CGSDefaultConnection ();
+          CGSSetWindowShadowAndRimParameters (cid, [native windowNumber], 10.0f, 0.44f, 0, 10, 512);
+#if 0
+          void* menu_blur;
+          if (CGSNewCIFilterByName (cid, @"CIGaussianBlur", &menu_blur) == kCGErrorSuccess)
+            {
+              NSDictionary *options = [NSDictionary dictionaryWithObject:[NSNumber numberWithFloat:1.5] forKey:@"inputRadius"];
+              if (CGSSetCIFilterValuesFromDictionary (cid, menu_blur, options) == kCGErrorSuccess)
+                CGSAddWindowFilter (cid, [native windowNumber], menu_blur, 1);
+              else
+                [options release];
+              CGSReleaseCIFilter (cid, menu_blur);
+            }
+#endif
+        }
 
       window_rect = CGRectMake (x, y, width, height);
 
-      native = gdk_quartz_window_get_nswindow (toplevel->window);
-      [native setOpaque:NO];
-      [native setBackgroundColor:[NSColor clearColor]];
-
-      // Round the menu corners- this trick "borrowed" from Mozilla's widget/cocoa/nsCocoaWindow.mm
-      CGSSetWindowShadowAndRimParameters (_CGSDefaultConnection (), [native windowNumber], 10.0f, 0.44f, 0, 10, 512);
-      [native invalidateShadow];
-
       // This has to be inset from window_rect because HIThemeDrawMenuBackground draws outside the passed rect
-      content_rect = CGRectMake (x, y + 4, width, height - 8);
+      content_rect = CGRectInset (window_rect, 0, 4);
 
       context = get_context (window, area);
       if (!context)
@@ -573,7 +593,7 @@ draw_box (GtkStyle      *style,
       HIThemeDrawMenuBackground (&content_rect, &draw_info, context, kHIThemeOrientationNormal);
 
       release_context (window, context);
-
+      [native invalidateShadow];
       return;
     }
   else if (IS_DETAIL (detail, "menuitem"))
