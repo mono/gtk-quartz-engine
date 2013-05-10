@@ -2,7 +2,7 @@
  *
  * Copyright (C) 2007-2008 Imendio AB
  * Copyright (C) 2009 Rob Caelers
- * Copyright (C) 2011 Xamarin Inc.
+ * Copyright (C) 2011-2013 Xamarin Inc.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -555,31 +555,6 @@ draw_box (GtkStyle      *style,
       toplevel = gtk_widget_get_toplevel (widget);
       native = gdk_quartz_window_get_nswindow (toplevel->window);
 
-      if ([native isOpaque])
-        {
-          [native setOpaque:NO];
-          [native setBackgroundColor:[NSColor clearColor]];
-
-          // Round the menu corners and add blur- this trick "borrowed" from
-          // http://hg.mozilla.org/mozilla-central/file/7a52ba9b1542/widget/cocoa/nsCocoaWindow.mm
-          // http://git.chromium.org/gitweb/?p=git/chromium.git;a=blob;f=chrome/browser/ui/cocoa/info_bubble_window.mm;h=b04c1914a86812a80b1f2edfe2d6ecc53b84eba6;hb=4d86f67745b73fc9cc9bf53c74265d6a21903cf2
-
-          int cid = _CGSDefaultConnection ();
-          CGSSetWindowShadowAndRimParameters (cid, [native windowNumber], 10.0f, 0.44f, 0, 10, 512);
-#if 0
-          void* menu_blur;
-          if (CGSNewCIFilterByName (cid, @"CIGaussianBlur", &menu_blur) == kCGErrorSuccess)
-            {
-              NSDictionary *options = [NSDictionary dictionaryWithObject:[NSNumber numberWithFloat:1.5] forKey:@"inputRadius"];
-              if (CGSSetCIFilterValuesFromDictionary (cid, menu_blur, options) == kCGErrorSuccess)
-                CGSAddWindowFilter (cid, [native windowNumber], menu_blur, 1);
-              else
-                [options release];
-              CGSReleaseCIFilter (cid, menu_blur);
-            }
-#endif
-        }
-
       window_rect = CGRectMake (x, y, width, height);
 
       // This has to be inset from window_rect because HIThemeDrawMenuBackground draws outside the passed rect
@@ -830,6 +805,54 @@ draw_box (GtkStyle      *style,
   parent_class->draw_box (style, window, state_type, shadow_type, area,
                           widget, detail, x, y, width, height);
 */
+}
+
+/* This hack is a fix for Xamarin bug #10021.
+ *  It prevents the context menu from flickering by changing the window properties earlier
+ *  than draw_box.
+ */
+static void
+set_background (GtkStyle               *style,
+                GdkWindow              *window,
+                GtkStateType            state_type)
+{
+    GtkWidget *widget = NULL;
+    NSWindow  *native = NULL;
+
+    gdk_window_get_user_data (window, &widget);
+
+    if (!GTK_IS_MENU (widget))
+    {
+        parent_class->set_background (style, window, state_type);
+        return;
+    }
+
+    native = gdk_quartz_window_get_nswindow (window);
+
+    if ([native isOpaque])
+    {
+        [native setOpaque:NO];
+        [native setBackgroundColor:[NSColor clearColor]];
+
+        // Round the menu corners and add blur- this trick "borrowed" from
+        // http://hg.mozilla.org/mozilla-central/file/7a52ba9b1542/widget/cocoa/nsCocoaWindow.mm
+        // http://git.chromium.org/gitweb/?p=git/chromium.git;a=blob;f=chrome/browser/ui/cocoa/info_bubble_window.mm;h=b04c1914a86812a80b1f2edfe2d6ecc53b84eba6;hb=4d86f67745b73fc9cc9bf53c74265d6a21903cf2
+
+        int cid = _CGSDefaultConnection ();
+        CGSSetWindowShadowAndRimParameters (cid, [native windowNumber], 10.0f, 0.44f, 0, 10, 512);
+#if 0
+        void* menu_blur;
+        if (CGSNewCIFilterByName (cid, @"CIGaussianBlur", &menu_blur) == kCGErrorSuccess)
+        {
+            NSDictionary *options = [NSDictionary dictionaryWithObject:[NSNumber numberWithFloat:1.5] forKey:@"inputRadius"];
+            if (CGSSetCIFilterValuesFromDictionary (cid, menu_blur, options) == kCGErrorSuccess)
+                CGSAddWindowFilter (cid, [native windowNumber], menu_blur, 1);
+            else
+                [options release];
+            CGSReleaseCIFilter (cid, menu_blur);
+        }
+#endif
+    }
 }
 
 static void
@@ -1909,6 +1932,7 @@ quartz_style_class_init (QuartzStyleClass *klass)
   style_class->draw_resize_grip = draw_resize_grip;
   style_class->draw_slider = draw_slider;
   style_class->draw_layout = draw_layout;
+  style_class->set_background = set_background;
 
   style_class->init_from_rc = quartz_style_init_from_rc;
   style_class->realize = quartz_style_realize;
