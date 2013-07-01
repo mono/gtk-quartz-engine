@@ -25,8 +25,6 @@ PKG_CHECK_MODULES(GTK, gtk+-2.0 >= 2.10.0,,
 GTK_VERSION=`$PKG_CONFIG --variable=gtk_binary_version gtk+-2.0`
 AC_SUBST(GTK_VERSION)
 
-AM_CFLAGS="-arch i386 -mmacosx-version-min=10.6"
-AM_OBJCFLAGS="-arch i386 -mmacosx-version-min=10.6"
 AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_OBJCFLAGS)
 
