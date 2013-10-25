@@ -884,8 +884,9 @@ draw_check (GtkStyle      *style,
       draw_info.adornment = kThemeAdornmentNone;
 
       /* FIXME: might want this? kThemeAdornmentDrawIndicatorOnly */
-
-      if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)))
+      if (gtk_toggle_button_get_inconsistent (GTK_TOGGLE_BUTTON (widget)))
+        draw_info.value = kThemeButtonMixed;
+      else if (gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget)))
         draw_info.value = kThemeButtonOn;
       else
         draw_info.value = kThemeButtonOff;
