@@ -126,6 +126,7 @@ quartz_draw_button (GtkStyle        *style,
                     GtkShadowType    shadow_type,
                     GtkWidget       *widget,
                     const gchar     *detail,
+                    GdkRectangle    *area,
                     ThemeButtonKind  kind,
                     gint             x,
                     gint             y,
@@ -144,20 +145,6 @@ quartz_draw_button (GtkStyle        *style,
   draw_info.adornment = kThemeAdornmentNone;
   draw_info.value = kThemeButtonOff;
 
-  // if the button size is too small or too tall, force the button kind so it looks better..
-	if (((width < 20) || (height > 29)) && (kind != kThemeBevelButtonInset)) { // FIXME: magic numbers. not sure if they're correct, just guesses
-	  draw_info.kind = kThemeBevelButton;
-	  rect = CGRectMake (x, y, width, height);
-
-	} else {
-	  gtk_widget_style_get (widget,
-						    "focus-line-width", &line_width,
-						    NULL);
-
-	  rect = CGRectMake (x + line_width, y + line_width,
-					     width - 2 * line_width, height - 2 * line_width - 2);
-	}
-
   if (state_type == GTK_STATE_ACTIVE ||
       (GTK_IS_TOGGLE_BUTTON (widget) &&
        gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (widget))))
@@ -167,27 +154,85 @@ quartz_draw_button (GtkStyle        *style,
   else
     draw_info.state = kThemeStateActive;
 
+
   //if (GTK_WIDGET_HAS_FOCUS (widget))
   //  draw_info.adornment |= kThemeAdornmentFocus;
-
   //if (IS_DETAIL (detail, "buttondefault"))
   //  draw_info.adornment |= kThemeAdornmentDefault;
 
   /* FIXME: Emulate default button pulsing. */
 
-  context = get_context (window, NULL);
-  if (!context)
-    return;
+  // if the button size is too small or too tall, force the button kind so it looks better..
+  // FIXME: magic numbers. not sure if they're correct, just guesses
+  if (((width < 20) || (height > 29)) && (kind != kThemeBevelButtonInset)) {
+    GtkAllocation allocation;
+    GdkPixmap *pixmap;
+    CGContextRef bitmap_context;
+    CGImageRef image;
+
+    gtk_widget_get_allocation (widget, &allocation);
+
+    draw_info.kind = kThemeBevelButton;
+    rect = CGRectMake (x, y, width, height);
+
+    pixmap = gdk_pixmap_new (GDK_DRAWABLE (window), allocation.width, allocation.height, 32);
+    bitmap_context = get_context (pixmap, NULL);
+
+    if (!bitmap_context)
+      {
+	g_object_unref (pixmap);
+	return;
+      }
+
+    CGRect bbox = CGRectMake (0, 0, allocation.width, allocation.height);
+
+    HIThemeDrawButton (&bbox,
+		       &draw_info,
+		       bitmap_context,
+		       kHIThemeOrientationNormal,
+		       NULL);
+
+    image = CGBitmapContextCreateImage (bitmap_context);
+
+    context = get_context (window, area);
+    if (!context)
+      {
+	CGImageRelease (image);
+
+	release_context(pixmap, bitmap_context);
+	g_object_unref (pixmap);
+
+	return;
+      }
+
+    CGContextDrawImage (context, rect, image);
+
+    release_context (window, context);
+    CGImageRelease (image);
+    release_context (pixmap, bitmap_context);
+    g_object_unref (pixmap);
+  } else {
+    gtk_widget_style_get (widget,
+			  "focus-line-width", &line_width,
+			  NULL);
+
+    rect = CGRectMake (x + line_width, y + line_width,
+		       width - 2 * line_width, height - 2 * line_width - 2);
+
+    context = get_context (window, NULL);
+    if (!context)
+      return;
 
 
-  HIThemeDrawButton (&rect,
-                     &draw_info,
-                     context,
-                     kHIThemeOrientationNormal,
-                     NULL);
+    HIThemeDrawButton (&rect,
+		       &draw_info,
+		       context,
+		       kHIThemeOrientationNormal,
+		       NULL);
 
 
-  release_context (window, context);
+    release_context (window, context);
+  }
 }
 
 
