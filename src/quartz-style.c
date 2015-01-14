@@ -449,7 +449,7 @@ draw_box (GtkStyle      *style,
       else /* Normal button. */
         {
           quartz_draw_button (style, window, state_type, shadow_type,
-                              widget, detail,
+                              widget, detail, area,
                               QUARTZ_STYLE (style)->theme_button_kind,
                               x, y,
                               width, height);
