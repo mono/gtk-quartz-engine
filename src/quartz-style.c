@@ -396,7 +396,7 @@ draw_box (GtkStyle      *style,
                          context,
                          kHIThemeOrientationNormal,
                          NULL);
-      
+
       release_context (window, context);
 
       return;
@@ -663,12 +663,12 @@ draw_box (GtkStyle      *style,
         case GTK_PROGRESS_RIGHT_TO_LEFT:
           draw_info.attributes = kThemeTrackHorizontal;
           break;
-          
+
         default:
           draw_info.attributes = 0;
           break;
         }
-      
+
       context = get_context (window, area);
       if (!context)
         return;
@@ -904,7 +904,7 @@ draw_check (GtkStyle      *style,
       if (IS_DETAIL (detail, "buttondefault"))
         draw_info.adornment |= kThemeAdornmentDefault;
 
-      rect = CGRectMake (x, y+1, width, height);
+      rect = CGRectMake (x, y, width, height);
 
       context = get_context (window, area);
       if (!context)
@@ -927,7 +927,7 @@ draw_check (GtkStyle      *style,
       HIThemeButtonDrawInfo draw_info;
 
       // FIXME: check if this can be merged with detail==checkbutton
-      
+
       draw_info.version = 0;
       draw_info.kind = kThemeCheckBox;
       draw_info.adornment = kThemeAdornmentNone;
@@ -939,18 +939,18 @@ draw_check (GtkStyle      *style,
         {
           draw_info.value = kThemeButtonOn;
         }
-      
+
       switch (state_type)
         {
         case GTK_STATE_INSENSITIVE:
           draw_info.state = kThemeStateInactive;
           break;
-          
+
         case GTK_STATE_SELECTED:
           draw_info.state = kThemeStatePressed;
           draw_info.adornment |= kThemeAdornmentFocus;
           break;
-            
+
         case GTK_STATE_ACTIVE:
           draw_info.state = kThemeStatePressed;
           break;
@@ -1039,7 +1039,7 @@ draw_option (GtkStyle      *style,
       if (IS_DETAIL (detail, "buttondefault"))
         draw_info.adornment |= kThemeAdornmentDefault;
 
-      rect = CGRectMake (x, y, width, height);
+      rect = CGRectMake (x, y-1, width, height);
 
       context = get_context (window, area);
       if (!context)
@@ -1056,7 +1056,7 @@ draw_option (GtkStyle      *style,
       return;
     }
   else if (GTK_IS_MENU(gtk_widget_get_parent (widget)))
-    { 
+    {
       quartz_draw_menu_checkmark (style,
                                   window,
                                   state_type,
@@ -1186,7 +1186,7 @@ draw_extension (GtkStyle        *style,
             draw_info.position = kHIThemeTabPositionFirst;
           else if (x == data.max_x - extra_width)
             draw_info.position = kHIThemeTabPositionLast;
-          else 
+          else
             draw_info.position = kHIThemeTabPositionMiddle;
         }
 
@@ -1223,7 +1223,7 @@ draw_box_gap (GtkStyle        *style,
 {
   DEBUG_DRAW;
 
-  
+
   parent_class->draw_box_gap (style, window, state_type, shadow_type,
                               area, widget, detail, x, y, width, height,
                               gap_side, gap_x, gap_width);
@@ -1549,7 +1549,7 @@ draw_vline (GtkStyle     *style,
 
 	release_context (window, context);
 */
-	return;	
+	return;
 }
 
 static void
